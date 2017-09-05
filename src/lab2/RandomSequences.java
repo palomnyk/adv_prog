@@ -16,9 +16,9 @@ public class RandomSequences
 		
 		for(int i = 0; i<1000; i++)
 		{
-			int ran = random.nextInt(4);
+			int ranNum= random.nextInt(4);
 			
-			switch (ran)
+			switch (ranNum)
 			{
 			case 0: nuc = "A";	
 				break;

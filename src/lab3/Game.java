@@ -3,7 +3,7 @@ package lab3;
 import java.util.Calendar;
 import java.util.Random;
 
-public class game 
+public class Game 
 {
 	public static String[] SHORT_NAMES = 
 	{
@@ -26,9 +26,11 @@ public class game
 
 	public static void main (String[] args) 
 	{
+		//instanciate timer and get ending time
 		Calendar cal = Calendar.getInstance();
 		long endTime = cal.getTimeInMillis() + 30000;
 		
+		//instancaiate string for later use
 		String aString = null;
 		
 		int correct = 0;
@@ -38,14 +40,17 @@ public class game
 		while (true)
 		{
 			Random random = new Random();
+			//find current time (now)
 			cal = Calendar.getInstance();
 			long now =  cal.getTimeInMillis();
+			
+			//check if time is up
 			if (now < endTime)
 			{
-				int amino = random.nextInt(20) - 1;
+				int amino = random.nextInt(20);
 				System.out.println("What is the single letter code for " + FULL_NAMES[amino] + "?");
 				aString = System.console().readLine().toUpperCase();
-				if (aString == SHORT_NAMES[amino]) 				
+				if (aString.equals(SHORT_NAMES[amino])) 				
 				{
 					correct += 1;
 					System.out.println("Correct!");
@@ -57,7 +62,7 @@ public class game
 			}
 			else 
 			{
-				System.out.println("You answered" + correct + "out of" + count + ".");
+				System.out.println("Time's up! You answered " + correct + " out of " + count + " correctly.");
 				break;
 			}
 		}

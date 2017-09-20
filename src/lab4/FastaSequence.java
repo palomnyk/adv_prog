@@ -84,6 +84,7 @@ public class FastaSequence
 						//reset header and sequence
 						currentHeader = "";
 						currentSeq = "";
+						
 					}
 					currentHeader = nextLine;
 				}
@@ -92,7 +93,14 @@ public class FastaSequence
 					currentSeq += nextLine;
 				}
 			}
+			//unload the last sequence
+			FastaSequence fastaEntry = new FastaSequence(currentHeader, currentSeq);
+			fasta.add(fastaEntry);
+			
+			//close reader
 			reader.close();
+			
+			//output list
 			return fasta;
 		
 	}

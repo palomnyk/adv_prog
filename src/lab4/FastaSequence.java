@@ -1,7 +1,7 @@
 /**
- * Advanced Programing
+ * Advanced Programming
  * 
- * This is a fasta file parser for lab4.
+ * This is a fasta file parser for lab4 and lab5.
  * 
  * @author aaronyerke
  * @19 Sept. 2017
@@ -61,6 +61,51 @@ public class FastaSequence
 		return ratio.floatValue();
 	}
 	
+	//Counts every seq and returns the seq and the count
+	//For lab 5
+	public static void writeUnique(File inFile, File outFile ) throws Exception
+	{
+		List<FastaSequence> input = readFastaFile(inFile.getAbsolutePath());
+		
+		Map<String, Integer> dict = new HashMap<>();
+		
+		for(int i = 0; i < input.size(); i++)
+		{
+			FastaSequence query = input.get(i);
+			String seq = query.getSequence();
+			
+			Integer test = dict.get(seq);
+			if (test != null)
+			{
+				dict.put(seq, test + 1);
+			}
+			else
+			{
+				dict.put(seq, 1);
+			}
+			
+		}
+		
+		//make a sorted list of values
+		Set<Integer> mySet = new TreeSet<>( dict.values() );
+		
+		PrintWriter writer = new PrintWriter(outFile.getAbsolutePath(), "UTF-8");
+        
+        for( Integer x: mySet )
+        {
+              writer.println( ">" + x );
+              for( String val: dict.keySet() )
+              {
+                    if( dict.get( val ).equals( x ) )
+                    {
+                          writer.println( val ); 
+                    }
+              }
+        }
+		writer.close();
+	}
+ 
+	
 	public static List<FastaSequence> readFastaFile(String filepath) throws Exception
 	{
 		String currentHeader = "";
@@ -107,15 +152,17 @@ public class FastaSequence
 	
 	public static void main(String[] args) throws Exception
 	{
-		
+	
 	List<FastaSequence> fastaList = FastaSequence.readFastaFile("/Users/aaronyerke/git/sample.fasta");
 
 	for( FastaSequence fs : fastaList)
 	{
-	System.out.println(fs.getHeader());
-	System.out.println(fs.getSequence());
-	System.out.println(fs.getGCRatio());
+	//System.out.println(fs.getHeader());
+	//System.out.println(fs.getSequence());
+	//System.out.println(fs.getGCRatio());
+	
 	}
+	writeUnique(new File("/Users/aaronyerke/git/sample.fasta"), new File("/Users/aaronyerke/git/output.txt"));
 	}
 
 

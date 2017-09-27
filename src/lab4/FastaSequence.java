@@ -108,10 +108,10 @@ public class FastaSequence
 	
 	public static List<FastaSequence> readFastaFile(String filepath) throws Exception
 	{
-		String currentHeader = "";
-		String currentSeq = "";
+		String currentHeader = null;
+		StringBuffer currentSeq = new StringBuffer();
 		
-		List fasta = new ArrayList<FastaSequence>();
+		List<FastaSequence> fasta = new ArrayList<FastaSequence>();
 		
 		BufferedReader reader = new BufferedReader( new FileReader( new File( filepath )));
 				
@@ -120,26 +120,26 @@ public class FastaSequence
 			{
 				if (nextLine.charAt(0) == '>')
 				{
-					if (currentHeader != "") 
+					if (currentHeader != null) 
 					{
-						FastaSequence fastaEntry = new FastaSequence(currentHeader, currentSeq);
+						FastaSequence fastaEntry = new FastaSequence(currentHeader, currentSeq.toString());
 						
 						fasta.add(fastaEntry);
 						
 						//reset header and sequence
-						currentHeader = "";
-						currentSeq = "";
+						currentHeader = null;
+						currentSeq = new StringBuffer();
 						
 					}
 					currentHeader = nextLine;
 				}
 				else
 				{
-					currentSeq += nextLine;
+					currentSeq.append(nextLine);
 				}
 			}
 			//unload the last sequence
-			FastaSequence fastaEntry = new FastaSequence(currentHeader, currentSeq);
+			FastaSequence fastaEntry = new FastaSequence(currentHeader, currentSeq.toString());
 			fasta.add(fastaEntry);
 			
 			//close reader

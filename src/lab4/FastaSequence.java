@@ -18,7 +18,7 @@ public class FastaSequence
 	
 	private String header;
 	private String sequence;
-	
+	private static Map<String,Integer> innerMap;
 	
 	
 	public FastaSequence(String header, String sequence) {
@@ -32,7 +32,95 @@ public class FastaSequence
 	{
 		return this.header;
 	}
+	
+	public static void seqCountTable(File inFile, File outFile ) throws Exception
+	{
+		//fasta sequences to be processed
+		List<FastaSequence> input = readFastaFile(inFile.getAbsolutePath());
+		
+		//hashmap nested in hashmap to hold samples and sequence counts
+		Map<String, Map<String,Integer>> samples = new HashMap<>();
+		
+		for(int i = 0; i < input.size(); i++)
+		{
+			FastaSequence query = input.get(i);
+			String seq = query.getSequence();
+			StringTokenizer sToken = new StringTokenizer(query.getHeader());
+		   	sToken.nextToken();
+		   	String sample = sToken.nextToken();
+		
+		   	innerMap = samples.get(sample);
+		   	
+		   	if( innerMap == null)
+		   	{
+		   		innerMap = new HashMap<>();
+		   		//make a new innermap store it in innerMap
+		   		innerMap.put(seq, 1);
+		   		//and add it to sequences with key samples
+		   		samples.put(sample, innerMap);
+		   	}else 
+		   	{
+		   		// get the counts for the sample from the innermap
+		   		Integer count = innerMap.get(seq);
+		   		
+		   		// (if it is null set it to zero)
+		   		if (count == null)
+		   		{
+		   			innerMap.put(seq, 1);
+		   		}else
+		   		{
+		   		// increment the counts by 1
+		   			count += 1;
+		   		// add it back to the innermaps
+		   			innerMap.put(seq, count);
+		   		}
 
+		   	}
+		}  	
+		//make a sorted set of samples
+		Set<String> sortedSamples = new TreeSet<>(samples.keySet());
+		
+		//list to hold sequences after hashmap is made; will become set of seqs
+		List<String> seqs = new ArrayList<>(); 
+		
+		for (String x: sortedSamples)
+		{
+			Set<String> singleSamp = samples.get(x).keySet();
+			
+			for (String j: singleSamp)
+				{
+					seqs.add(j);
+				}
+		}
+		
+	
+		PrintWriter writer = new PrintWriter(outFile.getAbsolutePath(), "UTF-8");
+		
+		writer.print("sample\t");
+		
+		for (String x : seqs)
+		{
+			writer.print(x + "\t");
+		}
+		writer.print('\n');
+		
+		for (String x: sortedSamples)
+		{
+			writer.print(x + "\t");
+			for (String k: seqs)
+			{
+				Integer count = (samples.get(x)).get(k);
+				if (count != null)
+				{
+					writer.print(count + '\t');
+				}
+			}
+			writer.print("\n");
+		}
+		writer.close();
+		}
+	
+	
 	// returns the Dna sequence of this FastaSequence
 	public String getSequence() 
 	{
@@ -65,8 +153,10 @@ public class FastaSequence
 	//For lab 5
 	public static void writeUnique(File inFile, File outFile ) throws Exception
 	{
+		//fasta sequences to be processed
 		List<FastaSequence> input = readFastaFile(inFile.getAbsolutePath());
 		
+		//empty hashmap to hold seq and count
 		Map<String, Integer> dict = new HashMap<>();
 		
 		for(int i = 0; i < input.size(); i++)
@@ -75,6 +165,8 @@ public class FastaSequence
 			String seq = query.getSequence();
 			
 			Integer test = dict.get(seq);
+			
+			//check if there is already a sequence at this slot
 			if (test != null)
 			{
 				dict.put(seq, test + 1);
@@ -83,7 +175,6 @@ public class FastaSequence
 			{
 				dict.put(seq, 1);
 			}
-			
 		}
 		
 		//make a sorted list of values
@@ -162,7 +253,7 @@ public class FastaSequence
 	//System.out.println(fs.getGCRatio());
 	
 	}
-	writeUnique(new File("/Users/aaronyerke/git/sample.fasta"), new File("/Users/aaronyerke/git/output.txt"));
+	seqCountTable(new File("/Users/aaronyerke/git/seqsIn.txt"), new File("/Users/aaronyerke/git/output.txt"));
 	}
 
 

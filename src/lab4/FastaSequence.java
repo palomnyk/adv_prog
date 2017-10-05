@@ -41,6 +41,9 @@ public class FastaSequence
 		//hashmap nested in hashmap to hold samples and sequence counts
 		Map<String, Map<String,Integer>> samples = new HashMap<>();
 		
+		//hack to make the code work
+	   	LinkedHashSet<String> seqsInOrder = new LinkedHashSet<>();
+		
 		for(int i = 0; i < input.size(); i++)
 		{
 			FastaSequence query = input.get(i);
@@ -48,7 +51,11 @@ public class FastaSequence
 			StringTokenizer sToken = new StringTokenizer(query.getHeader());
 		   	sToken.nextToken();
 		   	String sample = sToken.nextToken();
-		
+		   	
+		   	//add seq to set of seqsInOrder
+		   	seqsInOrder.add(seq);
+		   	
+		   	//holds sequences and counts
 		   	innerMap = samples.get(sample);
 		   	
 		   	if( innerMap == null)
@@ -81,7 +88,7 @@ public class FastaSequence
 		Set<String> sortedSamples = new TreeSet<>(samples.keySet());
 		
 		//list to hold sequences after hashmap is made; will become set of seqs
-		List<String> seqs = new ArrayList<>(); 
+		Set<String> seqs = new TreeSet<>(); 
 		
 		for (String x: sortedSamples)
 		{
@@ -98,7 +105,7 @@ public class FastaSequence
 		
 		writer.print("sample\t");
 		
-		for (String x : seqs)
+		for (String x : seqsInOrder)
 		{
 			writer.print(x + "\t");
 		}
@@ -107,15 +114,20 @@ public class FastaSequence
 		for (String x: sortedSamples)
 		{
 			writer.print(x + "\t");
-			for (String k: seqs)
+			for (String k: seqsInOrder)
 			{
 				Integer count = (samples.get(x)).get(k);
 				if (count != null)
 				{
-					writer.print(count + '\t');
+					writer.print(count.toString() + '\t');
 				}
+				else 
+				{
+					writer.print("0\t");
+				}
+				
 			}
-			writer.print("\n");
+			writer.print('\n');
 		}
 		writer.close();
 		}

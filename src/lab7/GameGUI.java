@@ -15,7 +15,7 @@ public class GameGUI extends JFrame
 	private JButton cancel = new JButton("Cancel");
 	private JTextField answerBox = new JTextField(20);
 	private JTextField counter = new JTextField();
-	private JTextField timer = new JTextField(20);
+	private JTextField timer = new JTextField();
 	private JTextField feedback = new JTextField();
 	private static final Random random = new Random();
 	private volatile boolean Continue = true;
@@ -53,10 +53,10 @@ public class GameGUI extends JFrame
 		setSize(400,200);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		getContentPane().setLayout(new BorderLayout());
-		getContentPane().add(aTextField, BorderLayout.EAST);
+		getContentPane().add(timer, BorderLayout.EAST);
 		getContentPane().add(startGame, BorderLayout.NORTH);
 		getContentPane().add(cancel, BorderLayout.WEST);
-		//getContentPane().add(feedback, BorderLayout.WEST);
+		getContentPane().add(aTextField, BorderLayout.CENTER);
 		aTextField.setText("Learn the amino acids!");
 		getContentPane().add(answerBox, BorderLayout.SOUTH);
 		startGame.addActionListener(new StartGameListener());
@@ -70,24 +70,35 @@ public class GameGUI extends JFrame
 				if (input.equals(aminoLet)) 				
 				{
 					correct += 1;
-					updateStartGame("Correct! Correct answer number: " + correct);
-					updateCounter();
+					updateStartGame("Correct! Correct answer count: " + correct);
 				}
 				else {
 					updateStartGame("Incorrect! It's " + aminoLet + ".");
 				} 
 				count += 1;
 				
+				answerBox.setText("");
+				
 				makeQuestion();
 				}
 			});
+		cancel.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e){
+				answerBox.setEditable(false);
+				startGame.setEnabled(true);
+				cancel.setEnabled(false);
+				updateTextField("Thanks for playing!  You got ".concat(Integer.valueOf(correct).toString().concat(" correct!")));
+				updateStartGame("Start the game");
+				
+			}
+		});
 		
 		setVisible(true);
 	}
 	
-	private void updateCounter() 
+	private void updateTimer(String message) 
 	{
-		counter.setText(Integer.valueOf(correct).toString());
+		timer.setText(message);
 		validate();
 	}
 		
@@ -114,6 +125,9 @@ public class GameGUI extends JFrame
 	{
 		public void actionPerformed(ActionEvent arg0)
 		{
+			startGame.setEnabled(false);
+			answerBox.setEnabled(true);
+			cancel.setEnabled(true);
 			runGame();
 		}
 	}
@@ -145,8 +159,8 @@ public class GameGUI extends JFrame
 		long endTime = cal.getTimeInMillis() + 30000;
 		long now =  cal.getTimeInMillis();
 		
-		/*correct = 0;		
-		count = 0;*/
+		correct = 0;		
+		count = 0;
 		
 		//boolean continue = True
 		//while (now < endTime)

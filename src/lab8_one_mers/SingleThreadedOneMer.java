@@ -6,14 +6,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 //import java.util.concurrent.atomic.AtomicInteger;
 
 public class SingleThreadedOneMer {
 	private static String myDirectoryPath = "/Users/aaronyerke/Desktop/fall_2017/adv_prog/adenomasRelease-master/fasta";
 	private static File[] directoryListing;
 	private static int fileCounter;
-	private static ConcurrentHashMap<String, Integer> nucleotideHash = new ConcurrentHashMap<>();
+	private static HashMap<String, Integer> nucleotideHash = new HashMap<>();
 	private static BufferedReader reader;
 	
 	//instantiate calendar
@@ -84,7 +84,7 @@ public class SingleThreadedOneMer {
 		}
 		System.out.println(Arrays.asList(nucleotideHash));
 		long end = System.currentTimeMillis();
-		System.out.println("Time: " + String.valueOf(end-start) + "mili-seconds");
+		System.out.println("Time: " + String.valueOf(end-start) + "miliseconds");
 		
 	}
 	

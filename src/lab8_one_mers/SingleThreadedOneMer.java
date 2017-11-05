@@ -17,15 +17,13 @@ public class SingleThreadedOneMer {
 	private static BufferedReader reader;
 	
 	//instantiate calendar
-	private static Calendar cal = Calendar.getInstance();
+	Calendar cal = Calendar.getInstance();
 	
 	//gather all the files in the directory
 	private static void fileHerder()
 	{
-	File[] directoryListing = new File(myDirectoryPath).listFiles();
-	System.out.println(directoryListing.toString());
-	fileCounter = directoryListing.length;
-	
+	directoryListing = new File(myDirectoryPath).listFiles();
+	fileCounter = directoryListing.length - 1;
 	nucleotideHash.put("A", 0);
 	nucleotideHash.put("C", 0);
 	nucleotideHash.put("G", 0);
@@ -37,7 +35,6 @@ public class SingleThreadedOneMer {
 	{
 	File file = directoryListing[fileCounter];
 	fileCounter -= 1;
-	System.out.println(directoryListing.toString());
 	return file;
 	}
 	
@@ -52,19 +49,19 @@ public class SingleThreadedOneMer {
 			{
 				for (Character ch: nextLine.toUpperCase().toCharArray()) {
 					if (ch == 'A') {
-						nucleotideHash.put("A", nucleotideHash.get("A"));
+						nucleotideHash.put("A", nucleotideHash.get("A") + 1);
 					}
 					if (ch == 'C') {
-						nucleotideHash.put("C", nucleotideHash.get("C"));
+						nucleotideHash.put("C", nucleotideHash.get("C") + 1);
 					}
 					if (ch == 'G') {
-						nucleotideHash.put("G", nucleotideHash.get("G"));
+						nucleotideHash.put("G", nucleotideHash.get("G") + 1);
 					}
 					if (ch == 'T') {
-						nucleotideHash.put("T", nucleotideHash.get("T"));
+						nucleotideHash.put("T", nucleotideHash.get("T") + 1);
 					}
 					else{
-						nucleotideHash.put("N", nucleotideHash.get("N"));
+						nucleotideHash.put("N", nucleotideHash.get("N") + 1);
 					}
 						
 				}
@@ -75,7 +72,7 @@ public class SingleThreadedOneMer {
 	public static void main(String[] args)
 	{
 		System.out.println("Single Threaded");
-		long start = cal.getTimeInMillis();	
+		long start = System.currentTimeMillis();
 		fileHerder();
 		while (fileCounter > 0){
 			try {
@@ -86,8 +83,8 @@ public class SingleThreadedOneMer {
 			}
 		}
 		System.out.println(Arrays.asList(nucleotideHash));
-		long end = cal.getTimeInMillis();	
-		System.out.println("Time: " + (end-start)/1000 + " seconds");
+		long end = System.currentTimeMillis();
+		System.out.println("Time: " + String.valueOf(end-start) + "mili-seconds");
 		
 	}
 	

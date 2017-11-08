@@ -23,7 +23,7 @@ public class SingleThreadedOneMer {
 	private static void fileHerder()
 	{
 	directoryListing = new File(myDirectoryPath).listFiles();
-	fileCounter = directoryListing.length - 1;
+	fileCounter = directoryListing.length-1;
 	nucleotideHash.put("A", 0);
 	nucleotideHash.put("C", 0);
 	nucleotideHash.put("G", 0);
@@ -40,24 +40,31 @@ public class SingleThreadedOneMer {
 	
 	private static void nucleotideCounter(File file) throws IOException
 	{
+		if( ! file.getName().startsWith("D5"))
+			return;
+		
+		System.out.println(file.getName());
+		
 		reader = new BufferedReader( new FileReader( file ));
 		
 		for (String nextLine = reader.readLine(); nextLine != null; 
 				nextLine = reader.readLine()) 
 		{
+			nextLine = nextLine.trim();
+			
 			if (nextLine.charAt(0) != '>')
 			{
 				for (Character ch: nextLine.toUpperCase().toCharArray()) {
 					if (ch == 'A') {
 						nucleotideHash.put("A", nucleotideHash.get("A") + 1);
 					}
-					if (ch == 'C') {
+					else if (ch == 'C') {
 						nucleotideHash.put("C", nucleotideHash.get("C") + 1);
 					}
-					if (ch == 'G') {
+					else if (ch == 'G') {
 						nucleotideHash.put("G", nucleotideHash.get("G") + 1);
 					}
-					if (ch == 'T') {
+					else if (ch == 'T') {
 						nucleotideHash.put("T", nucleotideHash.get("T") + 1);
 					}
 					else{
@@ -74,7 +81,7 @@ public class SingleThreadedOneMer {
 		System.out.println("Single Threaded");
 		long start = System.currentTimeMillis();
 		fileHerder();
-		while (fileCounter > 0){
+		while (fileCounter > -1){
 			try {
 				nucleotideCounter(fileShoot());
 			} catch (IOException e) {
@@ -84,7 +91,7 @@ public class SingleThreadedOneMer {
 		}
 		System.out.println(Arrays.asList(nucleotideHash));
 		long end = System.currentTimeMillis();
-		System.out.println("Time: " + String.valueOf(end-start) + "miliseconds");
+		System.out.println("Time: " + String.valueOf(end-start) + " miliseconds");
 		
 	}
 	

@@ -23,38 +23,24 @@ public class MultiThreadedOneMer {
 	private static int t_glob = 0;
 	private static int n_glob = 0;
 	/*private static ConcurrentHashMap<String, Integer> nucleotideHash = new ConcurrentHashMap<>();*/
-	private static BufferedReader reader;
 	
 	//gather all the files in the directory
 	private static void fileHerder()
 	{
 	directoryListing = new File(myDirectoryPath).listFiles();
 	fileCounter = directoryListing.length;
-	System.out.println(fileCounter);
-	/*
-	nucleotideHash.put("A", 0);
-	nucleotideHash.put("C", 0);
-	nucleotideHash.put("G", 0);
-	nucleotideHash.put("T", 0);
-	nucleotideHash.put("N", 0);
-	*/
+	//System.out.println(fileCounter);
 	}
 	
 	private static class nucleotideWrangler implements Callable<List<Integer>>
 	{
 		private final File file;
-		//private final Semaphore semaphore;
+		private BufferedReader reader;
 		
 
-		nucleotideWrangler(File file)//, Semaphore semaphore)// int a, int c, int g, int t, int n)
+		nucleotideWrangler(File file)
 		{
 			this.file = file;
-			//this.semaphore = semaphore;
-			/*this.a = a;
-			this.c = c;
-			this.g = g;
-			this.t = t;
-			this.n = n;*/
 			
 		}
 		public List<Integer> call() {
@@ -91,6 +77,7 @@ public class MultiThreadedOneMer {
 						}
 					}
 				}
+				reader.close();
 			}
 			catch(Exception ex)
 			{
@@ -99,7 +86,6 @@ public class MultiThreadedOneMer {
 				System.exit(1);
 			}
 			finally{
-				//semaphore.release();
 			}
 			
 			List<Integer>result = Arrays.asList(a,c,g,t,n);
@@ -116,20 +102,14 @@ public class MultiThreadedOneMer {
 		long start = System.currentTimeMillis();
 		fileHerder();
 		
-		//Semaphore s = new Semaphore(4);
-		
 		ExecutorService executor = Executors.newFixedThreadPool(4);
         List <Future<List<Integer>>> list = new ArrayList<Future<List<Integer>>>();
         
-        //System.out.println(fileCounter);
-        
 		for(int i = 0; i < fileCounter; i++)
 		{
-			//System.out.println(directoryListing[i]);
 			Future<List<Integer>> future = executor.submit(new nucleotideWrangler(directoryListing[i]));
 			list.add(future);
 		}
-		System.out.println(list.size());
 		executor.shutdown();
 		try {
 			executor.awaitTermination(100000, TimeUnit.MILLISECONDS);
@@ -139,10 +119,10 @@ public class MultiThreadedOneMer {
 		
 		for (Future<List<Integer>> fut : list)
         {
-			System.out.println(fut);
+			//System.out.println(fut);
                     try {
                     		List<Integer> glob = fut.get();
-                    		System.out.println(glob);
+                    		//System.out.println(glob);
                     		a_glob += glob.get(0);
                     		c_glob += glob.get(1);
                     		g_glob += glob.get(2);
@@ -150,8 +130,6 @@ public class MultiThreadedOneMer {
                     		n_glob += glob.get(4);
                     		
                     } catch (InterruptedException e) {                                               
-                                e.printStackTrace();
-                                // TODO Auto-generated catch block
                                 e.printStackTrace();
                     }
         }                       

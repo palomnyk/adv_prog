@@ -74,6 +74,7 @@ public class SingleThreadedOneMer {
 				}
 			}
 		}
+		reader.close();
 	}
 	
 	public static void main(String[] args)

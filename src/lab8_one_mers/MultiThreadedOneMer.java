@@ -32,13 +32,13 @@ public class MultiThreadedOneMer {
 	//System.out.println(fileCounter);
 	}
 	
-	private static class nucleotideWrangler implements Callable<List<Integer>>
+	private static class NucleotideWrangler implements Callable<List<Integer>>
 	{
 		private final File file;
 		private BufferedReader reader;
 		
 
-		nucleotideWrangler(File file)
+		NucleotideWrangler(File file)
 		{
 			this.file = file;
 			
@@ -107,7 +107,7 @@ public class MultiThreadedOneMer {
         
 		for(int i = 0; i < fileCounter; i++)
 		{
-			Future<List<Integer>> future = executor.submit(new nucleotideWrangler(directoryListing[i]));
+			Future<List<Integer>> future = executor.submit(new NucleotideWrangler(directoryListing[i]));
 			list.add(future);
 		}
 		executor.shutdown();

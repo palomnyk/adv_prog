@@ -151,6 +151,7 @@ public class PrimeNumGen extends JFrame
 				//add PrimeWorker here
 				Future<Integer> future = executor.submit(new PrimeWorker(i));
 				list.add(future);
+				System.out.println("Added " + i);
 			}
 			executor.shutdown();
 			try {
@@ -161,7 +162,9 @@ public class PrimeNumGen extends JFrame
 			for (Future<Integer> fut : list) {
 				Integer i = null;
 				try {
-					i = fut.get();
+					if (fut.get() != null) {
+						i = fut.get();
+					}
 				} catch (InterruptedException | ExecutionException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

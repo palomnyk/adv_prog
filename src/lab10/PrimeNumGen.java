@@ -3,14 +3,9 @@ package lab10;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -26,8 +21,11 @@ public class PrimeNumGen extends JFrame
 	private final JButton primeButton = new JButton("Start");
 	private final JButton cancelButton = new JButton("Cancel");
 	private volatile boolean cancel = false;
+	private volatile int done = 0;
 	private final PrimeNumGen thisFrame;
-	//private Long lastUpdate;
+	private AtomicInteger primeCount = new AtomicInteger(0);
+	private volatile int max;
+	private volatile long lastUpdate;
 	
 	public static void main(String[] args)
 	{
@@ -97,113 +95,134 @@ public class PrimeNumGen extends JFrame
 				}});
 		}
 	
-	private static boolean isPrime( int i)
+	private boolean isPrime( int i)
 	{
-		for( int x=2; x < i -1; x++)
+		for( int x=2; x < Math.sqrt(i); x++)
 			if( i % x == 0  )
 				return false;
 		
 		return true;
 	}
 	
-	private static class PrimeWorker implements Callable<Integer>
-	{
-		private final Integer factor;
-	
-		private PrimeWorker(int factor){
-			this.factor = factor;
-		}
-		public Integer call() {
+	//Make producer class
+	private class PrimeProducer implements Runnable {
+		private BlockingQueue<Integer> queue;
+		private final int start;
+		//private final int max;
 		
-			Integer result;
-				if (!isPrime(factor)) {
-					result = factor;
-				}else {
-					result = null;
+		private PrimeProducer(BlockingQueue<Integer> queue, int start) {
+			this.queue = queue;
+			this.start = start;
+			//this.max = max;
+		}
+		public void run() {
+			for (int i = start; i < max && ! cancel; i+=4) {
+			if (isPrime(i) == true){
+				try {
+					queue.put(i);
+					primeCount.getAndIncrement();
+					System.out.println("adding queue");
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					}
+				}
 			}
-			return result;
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			done += 1;
 		}
-	}					
+	}
 	
-	
-	
-	private class UserInput implements Runnable 
-	{
-		private final int max;
+	//Make consumer class
+	private class PrimeConsumer implements Runnable {
+		private BlockingQueue<Integer> queue;
 		
+		private PrimeConsumer(BlockingQueue<Integer> queue) {
+		this.queue = queue;
+		}
+		
+		public void run() {
+	        try {
+	            while (done < 4) {
+	            		System.out.println("time is " + System.currentTimeMillis());
+	                Integer number = queue.take();
+	                System.out.println(number);
+	                if( System.currentTimeMillis() - lastUpdate > 500)
+					{
+						final String outString= "Found " + primeCount.get() + " in " + number + " of " + max;
+						System.out.println("gooot innnnnnnnn");
+						Thread.sleep(10000);
+						
+						SwingUtilities.invokeLater( new Runnable()
+						{
+							@Override
+							public void run()
+							{
+								aTextField.setText(outString);
+							}
+						});
+						
+						lastUpdate = System.currentTimeMillis();	
+					}
+	                //next thing
+	                final StringBuffer buff = new StringBuffer();
+	    				buff.append(number + "\n");
+	    			
+	    				if( cancel == true)
+	    				buff.append("cancelled");
+	    			
+	    				SwingUtilities.invokeLater( new Runnable()
+	    				{
+	    				@Override
+	    				public void run()
+	    				{
+	    					cancel = false;
+	    					primeButton.setEnabled(true);
+	    					cancelButton.setEnabled(false);
+	    					aTextField.setText( (cancel ? "cancelled " : "") +  buff.toString());
+	    				}
+	    				});
+	                
+	            }
+	        } catch (InterruptedException e) {
+	            Thread.currentThread().interrupt();
+	        }
+	    }
+		
+	}
+	
+	
+	
+	private class UserInput implements Runnable
+	{
 		private UserInput(int num)
 		{
-			this.max = num;
+			max = num;
 		}
 		
 		public void run()
-		{
-			long lastUpdate = System.currentTimeMillis();
-			//List<Integer> list = new ArrayList<Integer>();
+		{	
+			cancel = false;
+			done = 0;
 			
-			System.out.println(Runtime.getRuntime().availableProcessors());
+			lastUpdate = System.currentTimeMillis();
 			
-			ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-	        List <Future<Integer>> list = new ArrayList<Future<Integer>>();
+			final BlockingQueue<Integer> queue = new LinkedBlockingQueue<>(500);
 			
-			for (int i = 1; i < max && ! cancel; i++) 
-			{
-				//add PrimeWorker here
-				Future<Integer> future = executor.submit(new PrimeWorker(i));
-				list.add(future);
-				System.out.println("Added " + i);
+			for (int i = 0; i < 4; i++) {
+				System.out.println("creating producer thread");
+			    new Thread(new PrimeProducer(queue, i)).start();
 			}
-			executor.shutdown();
-			try {
-				executor.awaitTermination(100000, TimeUnit.MILLISECONDS);
-			} catch (InterruptedException e) {
-				  System.out.println(e);
+			 
+			for (int j = 0; j < Runtime.getRuntime().availableProcessors(); j++) {
+				System.out.println("creating consumer thread");
+				new Thread(new PrimeConsumer(queue)).start();
 			}
-			for (Future<Integer> fut : list) {
-				Integer i = null;
-				try {
-					if (fut.get() != null) {
-						i = fut.get();
-					}
-				} catch (InterruptedException | ExecutionException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				if( System.currentTimeMillis() - lastUpdate > 500)
-				{
-					final String outString= "Found " + list.size() + " in " + i + " of " + max;
-					
-					SwingUtilities.invokeLater( new Runnable()
-					{
-						@Override
-						public void run()
-						{
-							aTextField.setText(outString);
-						}
-					});
-					
-					lastUpdate = System.currentTimeMillis();	
-				}		
-			final StringBuffer buff = new StringBuffer();
-			
-			buff.append(i + "\n");
-			
-			if( cancel) {
-				buff.append("cancelled");
-			}
-			
-			SwingUtilities.invokeLater( new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					cancel = false;
-					primeButton.setEnabled(true);
-					cancelButton.setEnabled(false);
-					aTextField.setText( (cancel ? "cancelled " : "") +  buff.toString());
-				}
-			});
-		}
 			
 			
 		}// end run

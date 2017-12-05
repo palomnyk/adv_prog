@@ -3,6 +3,7 @@ package lab10;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.HashSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,8 +25,11 @@ public class PrimeNumGen extends JFrame
 	private volatile int done = 0;
 	private final PrimeNumGen thisFrame;
 	private AtomicInteger primeCount = new AtomicInteger(0);
-	private volatile int max;
+	private volatile int maxInt;
 	private volatile long lastUpdate;
+	private volatile StringBuffer buff = new StringBuffer();
+	private volatile HashSet<Thread> primeThreads = new HashSet<Thread>();
+	private volatile long numProducerThreads;
 	
 	public static void main(String[] args)
 	{
@@ -57,7 +61,19 @@ public class PrimeNumGen extends JFrame
 	{
 		public void actionPerformed(ActionEvent arg0)
 		{
+			System.out.println("canceled");
 			cancel = true;
+			for (Thread t : primeThreads) {
+				try {
+					t.interrupt();
+				}catch(Exception e1)
+				{
+					System.out.println("Exception handled "+e1);
+					
+				}
+			}
+			primeButton.setEnabled(true);
+			cancelButton.setEnabled(false);
 		}
 	}
 	
@@ -75,6 +91,7 @@ public class PrimeNumGen extends JFrame
 					try
 					{
 						max = Integer.parseInt(num);
+						System.out.println(max);
 					}
 					catch(Exception ex)
 					{
@@ -85,11 +102,12 @@ public class PrimeNumGen extends JFrame
 					
 					if( max != null)
 					{
+						maxInt = max;
 						aTextField.setText("");
 						primeButton.setEnabled(false);
 						cancelButton.setEnabled(true);
 						cancel = false;
-						new Thread(new UserInput(max)).start();
+						new Thread(new UserInput()).start();
 
 					}
 				}});
@@ -97,31 +115,34 @@ public class PrimeNumGen extends JFrame
 	
 	private boolean isPrime( int i)
 	{
-		for( int x=2; x < Math.sqrt(i); x++)
+		int num = (int) Math.sqrt(i);
+		for( int x=2; x < num; x+=1)
 			if( i % x == 0  )
 				return false;
 		
 		return true;
 	}
 	
-	//Make producer class
 	private class PrimeProducer implements Runnable {
 		private BlockingQueue<Integer> queue;
 		private final int start;
-		//private final int max;
 		
 		private PrimeProducer(BlockingQueue<Integer> queue, int start) {
 			this.queue = queue;
 			this.start = start;
-			//this.max = max;
 		}
 		public void run() {
-			for (int i = start; i < max && ! cancel; i+=4) {
-			if (isPrime(i) == true){
+			//System.out.println(numProducerThreads);
+			//System.out.println(maxInt);
+			//System.out.println(start);
+			//System.out.println(cancel);
+			for (int i = start; i < maxInt && ! cancel; i = (int) (i + numProducerThreads)) {
+				System.out.println(i);
+			if (isPrime(i)){
 				try {
 					queue.put(i);
 					primeCount.getAndIncrement();
-					System.out.println("adding queue");
+					//System.out.println("adding queue");
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -148,13 +169,13 @@ public class PrimeNumGen extends JFrame
 		
 		public void run() {
 	        try {
-	            while (done < 4) {
+	            while (done < numProducerThreads) {
 	            		System.out.println("time is " + System.currentTimeMillis());
 	                Integer number = queue.take();
 	                System.out.println(number);
 	                if( System.currentTimeMillis() - lastUpdate > 500)
 					{
-						final String outString= "Found " + primeCount.get() + " in " + number + " of " + max;
+						final String outString= "Found " + primeCount.get() + " in " + number + " of " + maxInt;
 						System.out.println("gooot innnnnnnnn");
 						Thread.sleep(10000);
 						
@@ -170,7 +191,7 @@ public class PrimeNumGen extends JFrame
 						lastUpdate = System.currentTimeMillis();	
 					}
 	                //next thing
-	                final StringBuffer buff = new StringBuffer();
+	                //final StringBuffer buff = new StringBuffer();
 	    				buff.append(number + "\n");
 	    			
 	    				if( cancel == true)
@@ -183,7 +204,7 @@ public class PrimeNumGen extends JFrame
 	    				{
 	    					cancel = false;
 	    					primeButton.setEnabled(true);
-	    					cancelButton.setEnabled(false);
+	    					cancelButton.setEnabled(true);
 	    					aTextField.setText( (cancel ? "cancelled " : "") +  buff.toString());
 	    				}
 	    				});
@@ -200,9 +221,8 @@ public class PrimeNumGen extends JFrame
 	
 	private class UserInput implements Runnable
 	{
-		private UserInput(int num)
+		private UserInput()
 		{
-			max = num;
 		}
 		
 		public void run()
@@ -212,17 +232,23 @@ public class PrimeNumGen extends JFrame
 			
 			lastUpdate = System.currentTimeMillis();
 			
+			numProducerThreads =  Runtime.getRuntime().availableProcessors();
+			
 			final BlockingQueue<Integer> queue = new LinkedBlockingQueue<>(500);
 			
-			for (int i = 0; i < 4; i++) {
+			//1+4 2+4 3+4 4+4
+			
+			for (int i = 1; i < numProducerThreads; i++) {
 				System.out.println("creating producer thread");
-			    new Thread(new PrimeProducer(queue, i)).start();
+				Thread t = new Thread(new PrimeProducer(queue, i));
+				primeThreads.add(t);
+				t.start();
 			}
-			 
-			for (int j = 0; j < Runtime.getRuntime().availableProcessors(); j++) {
-				System.out.println("creating consumer thread");
-				new Thread(new PrimeConsumer(queue)).start();
-			}
+			System.out.println("creating consumer thread");
+			Thread u = new Thread(new PrimeConsumer(queue));
+			u.start();
+			primeThreads.add(u);
+
 			
 			
 		}// end run

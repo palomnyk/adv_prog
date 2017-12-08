@@ -1,11 +1,17 @@
 package lab10;
+/**A GUI that uses multithreading to calculate prime numbers and display
+ * them on the screen
+ * Authors: Anthony Fodor and Aaron Yerke
+ */
 
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.swing.JButton;
@@ -21,15 +27,15 @@ public class PrimeNumGen extends JFrame
 	private final JTextArea aTextField = new JTextArea();
 	private final JButton primeButton = new JButton("Start");
 	private final JButton cancelButton = new JButton("Cancel");
-	private volatile boolean cancel = false;
-	private volatile int done = 0;
+	private static volatile boolean cancel = false;
 	private final PrimeNumGen thisFrame;
-	private AtomicInteger primeCount = new AtomicInteger(0);
-	private volatile int maxInt;
-	private volatile long lastUpdate;
-	private volatile StringBuffer buff = new StringBuffer();
-	private volatile HashSet<Thread> primeThreads = new HashSet<Thread>();
-	private volatile long numProducerThreads;
+	private static AtomicInteger primeCount = new AtomicInteger(0);
+	private static volatile int maxInt;
+	private static volatile long lastUpdate;
+	private static volatile StringBuffer buff = new StringBuffer();
+	private static volatile HashSet<Thread> primeThreads = new HashSet<Thread>();
+	private static volatile long numAvailableThreads;
+	private volatile boolean semUsed;
 	
 	public static void main(String[] args)
 	{
@@ -57,30 +63,31 @@ public class PrimeNumGen extends JFrame
 		getContentPane().add( new JScrollPane(aTextField),  BorderLayout.CENTER);
 	}
 	
-	private class CancelOption implements ActionListener
-	{
-		public void actionPerformed(ActionEvent arg0)
-		{
-			System.out.println("canceled");
-			cancel = true;
-			for (Thread t : primeThreads) {
-				try {
-					t.interrupt();
-				}catch(Exception e1)
-				{
-					System.out.println("Exception handled "+e1);
-					
-				}
-			}
-			primeButton.setEnabled(true);
-			cancelButton.setEnabled(false);
-		}
-	}
-	
 	private void addActionListeners()
 	{
-		cancelButton.addActionListener(new CancelOption());
-	
+		cancelButton.addActionListener(new ActionListener() 
+		{
+			public void actionPerformed(ActionEvent arg0)
+			{
+				System.out.println("canceled");
+				cancel = true;
+				for (Thread t : primeThreads) {
+					try {
+						System.out.println(t);
+						t.interrupt();
+					}catch(Exception e1)
+					{
+						System.out.println("Exception handled "+e1);
+						
+					}
+				}
+				primeButton.setEnabled(true);
+				cancelButton.setEnabled(false);
+				aTextField.setText("Request canceled by user");
+				//set window to blank
+			}
+		});
+			
 		primeButton.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e)
 				{
@@ -115,8 +122,7 @@ public class PrimeNumGen extends JFrame
 	
 	private boolean isPrime( int i)
 	{
-		int num = (int) Math.sqrt(i);
-		for( int x=2; x < num; x+=1)
+		for( int x=2; x < i -1; x++)
 			if( i % x == 0  )
 				return false;
 		
@@ -124,60 +130,71 @@ public class PrimeNumGen extends JFrame
 	}
 	
 	private class PrimeProducer implements Runnable {
-		private BlockingQueue<Integer> queue;
+		private final Set<Integer> set;
 		private final int start;
+		private Semaphore sem;
 		
-		private PrimeProducer(BlockingQueue<Integer> queue, int start) {
-			this.queue = queue;
+		private PrimeProducer(Set<Integer> set, int start, Semaphore sem) {
+			this.set = set;;
 			this.start = start;
+			this.sem = sem;
 		}
 		public void run() {
-			//System.out.println(numProducerThreads);
+			//System.out.println(numAvailableThreads);
 			//System.out.println(maxInt);
 			//System.out.println(start);
 			//System.out.println(cancel);
-			for (int i = start; i < maxInt && ! cancel; i = (int) (i + numProducerThreads)) {
-				System.out.println(i);
-			if (isPrime(i)){
-				try {
-					queue.put(i);
-					primeCount.getAndIncrement();
-					//System.out.println("adding queue");
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					}
-				}
-			}
+			/** This for loop should allow for each thread to iterate through the 
+			 * numbers from different starts to max without ever hitting on the same
+			 * number.
+			 */
 			try {
-				Thread.sleep(500);
-			} catch (InterruptedException e) {
+				//System.out.println("Before acquire");
+				sem.acquire();
+				semUsed = true;
+				//System.out.println("After acquire");
+				
+			} catch (InterruptedException e1) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				System.out.println("Revise your semaphore math");
+				e1.printStackTrace();
 			}
-			done += 1;
+			for (int i = start; i < maxInt && ! cancel; i = (int) (i + numAvailableThreads)) {
+				//System.out.println(i);
+			if (isPrime(i)){
+					set.add(i);
+					primeCount.getAndIncrement();
+								}
+			}
+			System.out.println("dumping semaphore");
+			sem.release();
 		}
 	}
 	
 	//Make consumer class
 	private class PrimeConsumer implements Runnable {
-		private BlockingQueue<Integer> queue;
+		private final Set<Integer> set;
+		private Semaphore sem;
 		
-		private PrimeConsumer(BlockingQueue<Integer> queue) {
-		this.queue = queue;
+		
+		private PrimeConsumer(Set<Integer> set, Semaphore sem) {
+		this.set = set;
+		this.sem = sem;
 		}
 		
 		public void run() {
+			
 	        try {
-	            while (done < numProducerThreads) {
-	            		System.out.println("time is " + System.currentTimeMillis());
-	                Integer number = queue.take();
-	                System.out.println(number);
-	                if( System.currentTimeMillis() - lastUpdate > 500)
+	            while (sem.availablePermits() + 1 < numAvailableThreads ) {
+	            		//System.out.println("time is " + System.currentTimeMillis());
+	                //System.out.println(number);
+	                //System.out.println(System.currentTimeMillis() - lastUpdate);
+	                if( System.currentTimeMillis() - lastUpdate >= 500)
 					{
-						final String outString= "Found " + primeCount.get() + " in " + number + " of " + maxInt;
+						final String outString= "Found " + primeCount.get() + "primes in " + 
+								 "add number of " + maxInt;
 						System.out.println("gooot innnnnnnnn");
-						Thread.sleep(10000);
+						Thread.sleep(100);
 						
 						SwingUtilities.invokeLater( new Runnable()
 						{
@@ -190,13 +207,25 @@ public class PrimeNumGen extends JFrame
 						
 						lastUpdate = System.currentTimeMillis();	
 					}
+	                //System.out.println("out of loop");
+	                //System.out.println(done);               
+	            }
+                		System.out.println("out of loop");
 	                //next thing
 	                //final StringBuffer buff = new StringBuffer();
-	    				buff.append(number + "\n");
-	    			
+                		
+                		if (sem.availablePermits() ==numAvailableThreads -1) {
+                			
+                			buff = new StringBuffer();
+                			
+                			for( Integer i : set)
+                			{
+                				buff.append(i + "\n");
+                			}
+                			
 	    				if( cancel == true)
 	    				buff.append("cancelled");
-	    			
+	    				System.out.println("answer = " + buff);
 	    				SwingUtilities.invokeLater( new Runnable()
 	    				{
 	    				@Override
@@ -208,10 +237,10 @@ public class PrimeNumGen extends JFrame
 	    					aTextField.setText( (cancel ? "cancelled " : "") +  buff.toString());
 	    				}
 	    				});
-	                
-	            }
+                		}
+	            System.out.println("passed while loop");
 	        } catch (InterruptedException e) {
-	            Thread.currentThread().interrupt();
+	            //Thread.currentThread().interrupt();
 	        }
 	    }
 		
@@ -228,24 +257,43 @@ public class PrimeNumGen extends JFrame
 		public void run()
 		{	
 			cancel = false;
-			done = 0;
 			
 			lastUpdate = System.currentTimeMillis();
 			
-			numProducerThreads =  Runtime.getRuntime().availableProcessors();
+			semUsed = false;
 			
-			final BlockingQueue<Integer> queue = new LinkedBlockingQueue<>(500);
+			numAvailableThreads =  Runtime.getRuntime().availableProcessors();
 			
-			//1+4 2+4 3+4 4+4
+			//leave one thread for consumer
+			Semaphore sem = new Semaphore((int) (numAvailableThreads - 1));
 			
-			for (int i = 1; i < numProducerThreads; i++) {
+			final Set<Integer> set = Collections.synchronizedSet(new TreeSet<Integer>());
+			
+			for (int i = 1; i < numAvailableThreads; i++) {
 				System.out.println("creating producer thread");
-				Thread t = new Thread(new PrimeProducer(queue, i));
+				Thread t = new Thread(new PrimeProducer(set, i, sem));
 				primeThreads.add(t);
 				t.start();
 			}
+			
+			/**
+			 * The semUsed boolean will be tripped to true when the sem is acquired.  This should
+			 * prevent the possibility of the consumer thread starting finishing before any semaphores are 
+			 * acquired because the while loop will 
+			 */
+			
+			while (semUsed == false) {
+				System.out.println("Prevented race condition");
+				try {
+					Thread.sleep(400);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
 			System.out.println("creating consumer thread");
-			Thread u = new Thread(new PrimeConsumer(queue));
+			Thread u = new Thread(new PrimeConsumer(set, sem));
 			u.start();
 			primeThreads.add(u);
 

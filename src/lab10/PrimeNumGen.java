@@ -27,14 +27,14 @@ public class PrimeNumGen extends JFrame
 	private final JTextArea aTextField = new JTextArea();
 	private final JButton primeButton = new JButton("Start");
 	private final JButton cancelButton = new JButton("Cancel");
-	private static volatile boolean cancel = false;
+	private volatile boolean cancel = false;
 	private final PrimeNumGen thisFrame;
-	private static AtomicInteger primeCount = new AtomicInteger(0);
-	private static volatile int maxInt;
-	private static volatile long lastUpdate;
-	private static volatile StringBuffer buff = new StringBuffer();
-	private static volatile HashSet<Thread> primeThreads = new HashSet<Thread>();
-	private static volatile long numAvailableThreads;
+	private AtomicInteger primeCount = new AtomicInteger(0);
+	private volatile int maxInt;
+	private volatile long lastUpdate;
+	private volatile StringBuffer buff = new StringBuffer();
+	private volatile HashSet<Thread> primeThreads = new HashSet<Thread>();
+	private volatile long numAvailableThreads;
 	private volatile boolean semUsed;
 	
 	public static void main(String[] args)
@@ -233,7 +233,7 @@ public class PrimeNumGen extends JFrame
 	    				{
 	    					cancel = false;
 	    					primeButton.setEnabled(true);
-	    					cancelButton.setEnabled(true);
+	    					cancelButton.setEnabled(false);
 	    					aTextField.setText( (cancel ? "cancelled " : "") +  buff.toString());
 	    				}
 	    				});

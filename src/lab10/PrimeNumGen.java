@@ -191,8 +191,8 @@ public class PrimeNumGen extends JFrame
 	                //System.out.println(System.currentTimeMillis() - lastUpdate);
 	                if( System.currentTimeMillis() - lastUpdate >= 500)
 					{
-						final String outString= "Found " + primeCount.get() + "primes in " + 
-								 "add number of " + maxInt;
+						final String outString= "Found " + primeCount.get() + 
+								 "so far in " + maxInt;
 						System.out.println("gooot innnnnnnnn");
 						Thread.sleep(100);
 						
@@ -284,12 +284,7 @@ public class PrimeNumGen extends JFrame
 			
 			while (semUsed == false) {
 				System.out.println("Prevented race condition");
-				try {
-					Thread.sleep(400);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				Thread.yield();
 			}
 			
 			System.out.println("creating consumer thread");

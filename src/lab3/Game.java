@@ -26,7 +26,7 @@ public class Game
 
 	public static void main (String[] args) 
 	{
-		//instanciate timer and get ending time
+		//instantiate timer and get ending time
 		Calendar cal = Calendar.getInstance();
 		long endTime = cal.getTimeInMillis() + 30000;
 		

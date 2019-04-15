@@ -30,12 +30,12 @@ public class PrimeNumGen extends JFrame
 	private volatile boolean cancel = false;
 	private final PrimeNumGen thisFrame;
 	private AtomicInteger primeCount = new AtomicInteger(0);
-	private volatile int maxInt;
-	private volatile long lastUpdate;
+	private static volatile int maxInt;
+	private static volatile long lastUpdate;
 	private volatile StringBuffer buff = new StringBuffer();
 	private volatile HashSet<Thread> primeThreads = new HashSet<Thread>();
 	private volatile long numAvailableThreads;
-	private volatile boolean semUsed;
+	private static volatile boolean semUsed;
 	
 	public static void main(String[] args)
 	{
